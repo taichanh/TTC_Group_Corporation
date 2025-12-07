@@ -16,6 +16,9 @@ const systemLogSchema = new mongoose.Schema({
   userAgent: {
     type: String,
   },
+  meta: {
+    type: mongoose.Schema.Types.Mixed, // optional extra info
+  },
 }, {
   timestamps: true,
 });
