@@ -1,0 +1,81 @@
+# User Auth & Logging Service (Node.js + Express + MongoDB)
+
+Mục tiêu: Triển khai module "Người dùng & Xác thực" cho dự án backup/restore — bao gồm đăng ký, đăng nhập, profile update, JWT auth, RBAC (user/admin), system logs và restore request logging.
+
+## Tính năng đã triển khai
+- Register (bcrypt)
+- Login (JWT)
+- Middleware bảo vệ route: protect (JWT) và authorize (role)
+- User endpoints: get profile, update profile
+- Admin endpoint: list users
+- Restore request: tạo entry trong `restore_logs` (trạng thái pending)
+- System logging: mọi thao tác quan trọng được ghi vào collection `system_logs`
+
+## Sơ đồ dữ liệu (Collections chính)
+1) users
+- _id: ObjectId
+- email: string (unique)
+- password: string (hashed)
+- role: "user" | "admin"
+- profile: { fullName, phone, address }
+- lastLoginAt: Date
+- createdAt: Date
+
+2) system_logs
+- _id
+- user: ObjectId | null
+- action: string (USER_REGISTER | USER_LOGIN | USER_UPDATE_PROFILE | REQUEST_RESTORE | ...)
+- meta: Object
+- ip: string
+- createdAt: Date
+
+3) restore_logs
+- _id
+- user: ObjectId (owner of data)
+- requestedBy: ObjectId (who requested)
+- status: pending|in_progress|completed|failed
+- backupRef: string (tùy chọn)
+- notes: string
+- createdAt, completedAt
+
+Quan hệ: system_logs và restore_logs tham chiếu tới users bằng ObjectId.
+
+## Cách chạy
+1. Copy `.env.example` -> `.env` và điền:
+   - MONGO_URI (mặc định trong example là connection bạn cung cấp — tốt nhất thay bằng biến an toàn)
+   - JWT_SECRET
+2. Cài dependencies:
+   npm install
+3. Chạy dev:
+   npm run dev
+
+## Endpoints (ví dụ)
+- POST /api/v1/auth/register
+  - body: { email, password, profile? }
+- POST /api/v1/auth/login
+  - body: { email, password }
+  - returns token (Bearer)
+- GET /api/v1/users/me
+  - headers: Authorization: Bearer <token>
+- PATCH /api/v1/users/me
+  - body: { profile?, password?, email? }
+- POST /api/v1/users/:id/request-restore
+  - headers: Bearer token (user or admin)
+  - body: { notes? }
+- GET /api/v1/users
+  - admin only
+
+## Ví dụ Postman (tóm tắt)
+1. Register -> Login -> lấy token
+2. GET /users/me với header Authorization
+3. POST /users/:id/request-restore (id = mình hoặc admin có thể cho id khác)
+
+## Bảo mật & Triển khai
+- Không lưu JWT_SECRET / MONGO_URI trong mã nguồn public.
+- Sử dụng TLS/SSL cho API endpoint khi triển khai.
+- Giới hạn số lần đăng nhập (rate-limiting) và theo dõi logs (Log retention) - có thể bổ sung sau.
+
+## Mở rộng (gợi ý)
+- Tạo collection `backups` + scheduler cron để tự động snapshot -> lưu metadata vào backups.
+- Endpoint admin để xem/approve/execute restore (kết nối với module backup/restore).
+- Giám sát: metrics cho số restore, thời gian backup, lỗi.
