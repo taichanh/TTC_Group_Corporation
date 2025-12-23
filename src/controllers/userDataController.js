@@ -32,7 +32,7 @@ const getUserData = async (req, res, next) => {
   try {
     const doc = await UserData.findOne({ owner: req.user._id, key: req.params.key });
     if (!doc) return res.status(404).json({ message: 'Not found' });
-    await createSystemLog({ user: req.user._id, action: 'USERDATA_UPDATE', meta: { key: req.params.key } });
+    await createSystemLog({ user: req.user._id, action: 'USERDATA_READ', meta: { key: req.params.key } });
     res.json({ success: true, data: doc });
   } catch (err) { next(err); }
 };
@@ -41,9 +41,12 @@ const getUserData = async (req, res, next) => {
 const updateUserData = async (req, res, next) => {
   try {
     const { data, tags } = req.body;
+    const setObj = { data };
+    if (tags !== undefined) setObj.tags = tags;
+    const update = { $set: setObj };
     const doc = await UserData.findOneAndUpdate(
       { owner: req.user._id, key: req.params.key },
-      { $set: { data }, ...(tags ? { $set: { data, tags } } : {}) },
+      update,
       { new: true }
     );
     if (!doc) return res.status(404).json({ message: 'Not found' });

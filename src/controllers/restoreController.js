@@ -16,6 +16,7 @@ const requestRestore = async (req, res, next) => {
       notes,
     });
     await createSystemLog({ user: req.user._id, action: 'RESTORE_REQUEST', meta: { restoreId: doc._id.toString(), targetUser: targetUser } });
+    try { const { sendWebhook } = require('../utils/notify'); sendWebhook('restore.request', { restoreId: doc._id.toString(), targetUser }).catch(()=>{}); } catch(_) {}
     res.status(201).json({ success: true, data: doc });
   } catch (err) { next(err); }
 };
@@ -32,6 +33,7 @@ const approveRestore = async (req, res, next) => {
     doc.backupRef = backupRef || doc.backupRef;
     await doc.save();
     await createSystemLog({ user: req.user._id, action: 'RESTORE_APPROVE', meta: { restoreId: doc._id.toString(), backupRef: doc.backupRef } });
+    try { const { sendWebhook } = require('../utils/notify'); sendWebhook('restore.approved', { restoreId: doc._id.toString(), backupRef: doc.backupRef }).catch(()=>{}); } catch(_) {}
     res.json({ success: true, data: doc });
   } catch (err) { next(err); }
 };
@@ -45,13 +47,59 @@ const executeRestore = async (req, res, next) => {
     doc.status = 'in_progress';
     doc.restoredBy = req.user._id;
     await doc.save();
-    // Simplified example: for DATA restore, we could copy last backup data back into UserData
-    // Here we simulate success without actual S3/MongoDump restore
-    // TODO: integrate storage abstraction to read snapshot and rehydrate
+
+    // Determine backup to use
+    const Backup = require('../models/Backup');
+    const { getStorage } = require('../services/storage');
+
+    let backupRef = req.body.backupRef || doc.backupRef;
+    const backupAt = req.body.backupAt || doc.backupAt; // optional timestamp for point-in-time restore
+    let backupDoc = null;
+    if (backupRef) {
+      backupDoc = await Backup.findOne({ $or: [{ _id: backupRef }, { storageRef: backupRef }] });
+    }
+    if (!backupDoc) {
+      if (backupAt) {
+        const t = new Date(backupAt);
+        if (isNaN(t)) throw new Error('Invalid backupAt timestamp');
+        // find latest completed backup at or before the requested time
+        backupDoc = await Backup.findOne({ status: 'completed', completedAt: { $lte: t } }).sort({ completedAt: -1 });
+      } else {
+        // pick latest completed backup
+        backupDoc = await Backup.findOne({ status: 'completed' }).sort({ completedAt: -1 });
+      }
+    }
+    if (!backupDoc || !backupDoc.storageRef) {
+      throw new Error('No suitable backup snapshot found');
+    }
+
+    const storage = getStorage();
+    const items = await storage.readJSON(backupDoc.storageRef);
+
+    // Rehydrate: for DATA restore, restore UserData entries for targetUser
+    if (doc.restoreType === 'DATA' || doc.restoreType === 'ACCOUNT') {
+      const UserData = require('../models/UserData');
+      const targetUserId = doc.targetUser.toString();
+      const restoreItems = Array.isArray(items) ? items.filter(i => i.owner && i.owner.toString() === targetUserId) : [];
+
+      for (const it of restoreItems) {
+        const key = it.key;
+        const payload = it.data;
+        const tags = it.tags || [];
+        await UserData.findOneAndUpdate(
+          { owner: targetUserId, key },
+          { $set: { data: payload, tags } },
+          { upsert: true }
+        );
+      }
+    }
+
     doc.status = 'completed';
     doc.executedAt = new Date();
+    doc.backupRef = backupDoc._id.toString();
     await doc.save();
-    await createSystemLog({ user: req.user._id, action: 'RESTORE_EXECUTE', meta: { restoreId: doc._id.toString() } });
+    await createSystemLog({ user: req.user._id, action: 'RESTORE_EXECUTE', meta: { restoreId: doc._id.toString(), backupId: backupDoc._id.toString() } });
+    try { const { sendWebhook } = require('../utils/notify'); sendWebhook('restore.executed', { restoreId: doc._id.toString(), backupId: backupDoc._id.toString() }).catch(()=>{}); } catch(_) {}
     res.json({ success: true, data: doc });
   } catch (err) {
     try {
@@ -71,6 +119,7 @@ const verifyRestore = async (req, res, next) => {
     doc.verifiedAt = new Date();
     await doc.save();
     await createSystemLog({ user: req.user._id, action: 'RESTORE_VERIFY', meta: { restoreId: doc._id.toString() } });
+    try { const { sendWebhook } = require('../utils/notify'); sendWebhook('restore.verified', { restoreId: doc._id.toString() }).catch(()=>{}); } catch(_) {}
     res.json({ success: true, data: doc });
   } catch (err) { next(err); }
 };

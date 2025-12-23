@@ -4,10 +4,12 @@ const Backup = require('../models/Backup');
 const { getStorage } = require('../services/storage');
 const { createSystemLog } = require('./logger');
 const ACTIONS = require('./actions');
+const { sendWebhook } = require('./notify');
 
 async function performUserDataFullBackup() {
   const backup = await Backup.create({ type: 'USER_DATA_FULL', status: 'in_progress', startedAt: new Date() });
   await createSystemLog({ action: ACTIONS.BACKUP_START, meta: { backupId: backup._id.toString(), type: 'USER_DATA_FULL' } });
+  sendWebhook('backup.start', { backupId: backup._id.toString(), type: 'USER_DATA_FULL' }).catch(() => {});
   try {
     const items = await UserData.find({}).lean();
     const storage = getStorage();
@@ -20,10 +22,12 @@ async function performUserDataFullBackup() {
       storageRef: filePath,
     });
     await createSystemLog({ action: ACTIONS.BACKUP_COMPLETE, meta: { backupId: backup._id.toString(), itemCount: items.length, storageRef: filePath } });
+    sendWebhook('backup.complete', { backupId: backup._id.toString(), itemCount: items.length, storageRef: filePath }).catch(() => {});
   } catch (err) {
     console.error('Backup failed:', err);
     await Backup.findByIdAndUpdate(backup._id, { status: 'failed', error: err.message });
     await createSystemLog({ action: ACTIONS.BACKUP_FAIL, meta: { backupId: backup._id.toString(), error: err.message } });
+    sendWebhook('backup.failed', { backupId: backup._id.toString(), error: err.message }).catch(() => {});
   }
 }
 

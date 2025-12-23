@@ -70,6 +70,41 @@ Quan hệ: system_logs và restore_logs tham chiếu tới users bằng ObjectId
 2. GET /users/me với header Authorization
 3. POST /users/:id/request-restore (id = mình hoặc admin có thể cho id khác)
 
+## Quick curl examples
+
+- Register:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","password":"secret123","name":"User"}'
+```
+
+- Login:
+
+```bash
+curl -X POST http://localhost:4000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"user@example.com","password":"secret123"}'
+```
+
+- Trigger backup (admin):
+
+```bash
+curl -X POST http://localhost:4000/api/v1/backups/trigger \
+  -H 'Authorization: Bearer <ADMIN_TOKEN>'
+```
+
+## Notifications
+
+You can configure an external webhook to receive lifecycle events for backup/restore by setting the environment variable `NOTIFY_WEBHOOK` to a URL. Events posted are: `backup.start`, `backup.complete`, `backup.failed`, `restore.request`, `restore.approved`, `restore.executed`, `restore.verified`.
+
+Example (dev):
+
+```bash
+export NOTIFY_WEBHOOK="http://localhost:9000/hooks"
+```
+
 ## Bảo mật & Triển khai
 - Không lưu JWT_SECRET / MONGO_URI trong mã nguồn public.
 - Sử dụng TLS/SSL cho API endpoint khi triển khai.
