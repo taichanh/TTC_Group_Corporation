@@ -12,6 +12,9 @@ const userDataRoutes = require('./routes/userData');
 const logRoutes = require('./routes/logs');
 const restoreRoutes = require('./routes/restore');
 const backupsRoutes = require('./routes/backups');
+const backupSchedulesRoutes = require('./routes/backupSchedules');
+const auditTrailsRoutes = require('./routes/auditTrails');
+const notificationRoutes = require('./routes/notifications');
 const { errorHandler } = require('./utils/errorHandler');
 const { initBackupCron } = require('./utils/backupCron');
 
@@ -42,6 +45,9 @@ app.use('/api/v1/user-data', userDataRoutes);
 app.use('/api/v1/logs', logRoutes);
 app.use('/api/v1/restore', restoreRoutes);
 app.use('/api/v1/backups', backupsRoutes);
+app.use('/api/v1/backup-schedules', backupSchedulesRoutes);
+app.use('/api/v1/audit-trails', auditTrailsRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 app.get('/api/v1/health', (req, res) => {
   res.json({ status: 'ok' });
