@@ -20,8 +20,11 @@ const { initBackupCron } = require('./utils/backupCron');
 
 const app = express();
 
+connectDB(process.env.MONGO_URI);
+
 app.use(helmet());
-// CORS whitelist
+
+
 const allowedOrigins = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({ origin: (origin, cb) => {
   if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) return cb(null, true);
