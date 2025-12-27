@@ -30,13 +30,10 @@ app.use(cors({ origin: (origin, cb) => {
 app.use(morgan('combined'));
 app.use(express.json());
 
-const MONGO_URI = process.env.MONGO_URI;
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error('Missing JWT_SECRET in environment. Set it in .env');
-  process.exit(1);
-}
-connectDB(MONGO_URI);
+// Root route
+app.get('/', (req, res) => {
+  res.send('Welcome to TTC Group Corporation API');
+});
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
@@ -55,10 +52,7 @@ app.get('/api/v1/health', (req, res) => {
 
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
 // Initialize backup cron after server starts
 initBackupCron();
+
+module.exports = app;
