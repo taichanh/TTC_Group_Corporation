@@ -52,7 +52,14 @@ app.get('/api/v1/health', (req, res) => {
 
 app.use(errorHandler);
 
-// Initialize backup cron after server starts
+
+initBackupCron();app.use(errorHandler);
+
 initBackupCron();
+
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 module.exports = app;
