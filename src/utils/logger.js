@@ -1,12 +1,13 @@
 const SystemLog = require('../models/SystemLog');
 
-async function createSystemLog({ user = null, action, meta = {}, ip = null }) {
+async function createSystemLog({ user = null, action, meta = {}, ip = null, userAgent = null }) {
   try {
     const log = await SystemLog.create({
       user,
       action,
       meta,
-      ip
+      ipAddress: ip || null,
+      userAgent: userAgent || null,
     });
     return log;
   } catch (err) {
