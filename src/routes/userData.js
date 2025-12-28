@@ -13,8 +13,8 @@ router.use(protect);
 
 router.post('/', createUserData); // create
 router.get('/', listUserData); // list own
-router.get('/:key', getUserData); // read
-router.put('/:key', updateUserData); // update
-router.delete('/:key', deleteUserData); // delete
+router.get('/:id', getUserData); // read
+router.put('/:id', updateUserData); // update
+router.delete('/:id', deleteUserData); // delete
 
 module.exports = router;

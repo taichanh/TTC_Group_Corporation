@@ -3,8 +3,7 @@ const mongoose = require('mongoose');
 // Tracks backup schedules for automated backups
 const backupScheduleSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  frequency: { type: String, enum: ['daily', 'weekly', 'monthly'], required: true },
-  nextRun: { type: Date, required: true },
+  cronExpression: { type: String, required: true },
   enabled: { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   lastRun: { type: Date },

@@ -16,6 +16,25 @@ const getNotifications = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Create notification (for internal use or admin)
+// @route   POST /api/v1/notifications
+// @access  Private/Admin
+const createNotification = asyncHandler(async (req, res) => {
+  const { user, title, message, type } = req.body;
+
+  const notification = await Notification.create({
+    user,
+    title,
+    message,
+    type: type || 'info'
+  });
+
+  res.status(201).json({
+    success: true,
+    data: notification
+  });
+});
+
 // @desc    Mark notification as read
 // @route   PUT /api/v1/notifications/:id/read
 // @access  Private
@@ -59,6 +78,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
 
 module.exports = {
   getNotifications,
+  createNotification,
   markAsRead,
   deleteNotification
 };

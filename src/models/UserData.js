@@ -5,7 +5,7 @@ const userDataSchema = new mongoose.Schema({
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   key: { type: String, required: true }, // logical key/name
   data: { type: mongoose.Schema.Types.Mixed, required: true }, // JSON payload
-  tags: [{ type: String }],
+  metadata: { type: mongoose.Schema.Types.Mixed }, // metadata object
 }, { timestamps: true });
 
 userDataSchema.index({ owner: 1, key: 1 }, { unique: true });

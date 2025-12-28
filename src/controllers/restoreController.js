@@ -24,7 +24,8 @@ const requestRestore = async (req, res, next) => {
 // Approve restore (admin)
 const approveRestore = async (req, res, next) => {
   try {
-    const { backupRef } = req.body;
+    const { approved, approvedBy, backupRef } = req.body;
+    if (approved !== true) return res.status(400).json({ message: 'approved must be true' });
     const doc = await RestoreLog.findById(req.params.id);
     if (!doc) return res.status(404).json({ message: 'Restore request not found' });
     if (doc.status !== 'pending') return res.status(400).json({ message: 'Invalid status transition' });
@@ -32,6 +33,14 @@ const approveRestore = async (req, res, next) => {
     doc.approvedBy = req.user._id;
     doc.backupRef = backupRef || doc.backupRef;
     await doc.save();
+    // Create notification for the user
+    const Notification = require('../models/Notification');
+    await Notification.create({
+      user: doc.targetUser,
+      title: 'Restore Request Approved',
+      message: `Your restore request for ${doc.restoreType} has been approved.`,
+      type: 'success'
+    });
     await createSystemLog({ user: req.user._id, action: 'RESTORE_APPROVE', meta: { restoreId: doc._id.toString(), backupRef: doc.backupRef } });
     try { const { sendWebhook } = require('../utils/notify'); sendWebhook('restore.approved', { restoreId: doc._id.toString(), backupRef: doc.backupRef }).catch(()=>{}); } catch(_) {}
     res.json({ success: true, data: doc });
@@ -47,6 +56,14 @@ const executeRestore = async (req, res, next) => {
     doc.status = 'in_progress';
     doc.restoredBy = req.user._id;
     await doc.save();
+    // Create notification for the user
+    const Notification = require('../models/Notification');
+    await Notification.create({
+      user: doc.targetUser,
+      title: 'Restore Started',
+      message: `Your restore request for ${doc.restoreType} is now in progress.`,
+      type: 'info'
+    });
 
     // Determine backup to use
     const Backup = require('../models/Backup');

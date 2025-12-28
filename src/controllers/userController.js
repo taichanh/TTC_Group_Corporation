@@ -26,7 +26,7 @@ const getUserById = async (req, res, next) => {
 
 module.exports = { getAllUsers, getUserById };
 
-const getMe = async (req, res, next) => {
+const getProfile = async (req, res, next) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
     const user = await User.findById(req.user._id).select('-password');
@@ -34,18 +34,14 @@ const getMe = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-const updateMe = async (req, res, next) => {
+const updateProfile = async (req, res, next) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
-    const { name, email, password } = req.body;
+    const { fullName, phone, address } = req.body;
     const update = {};
-    if (name) update.name = name;
-    if (email) update.email = email;
-    if (password) {
-      const bcrypt = require('bcryptjs');
-      const salt = await bcrypt.genSalt(10);
-      update.password = await bcrypt.hash(password, salt);
-    }
+    if (fullName !== undefined) update['profile.fullName'] = fullName;
+    if (phone !== undefined) update['profile.phone'] = phone;
+    if (address !== undefined) update['profile.address'] = address;
     const user = await User.findByIdAndUpdate(req.user._id, update, { new: true }).select('-password');
     res.json({ success: true, data: user });
   } catch (err) { next(err); }
@@ -59,4 +55,4 @@ const deleteMe = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getAllUsers, getUserById, getMe, updateMe, deleteMe };
+module.exports = { getAllUsers, getUserById, getProfile, updateProfile, deleteMe };

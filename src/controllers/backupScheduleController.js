@@ -23,11 +23,11 @@ const getBackupSchedule = async (req, res, next) => {
 // Create backup schedule
 const createBackupSchedule = async (req, res, next) => {
   try {
-    const { name, frequency, nextRun, type, owner, notes } = req.body;
+    const { name, cronExpression, enabled, type = 'USER_DATA_FULL', owner, notes } = req.body;
     const doc = new BackupSchedule({
       name,
-      frequency,
-      nextRun,
+      cronExpression,
+      enabled,
       type,
       owner,
       notes,
@@ -42,11 +42,10 @@ const createBackupSchedule = async (req, res, next) => {
 // Update backup schedule
 const updateBackupSchedule = async (req, res, next) => {
   try {
-    const { name, frequency, nextRun, enabled, type, owner, notes } = req.body;
+    const { name, cronExpression, enabled, type, owner, notes } = req.body;
     const doc = await BackupSchedule.findByIdAndUpdate(req.params.id, {
       name,
-      frequency,
-      nextRun,
+      cronExpression,
       enabled,
       type,
       owner,

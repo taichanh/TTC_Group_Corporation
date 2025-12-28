@@ -8,19 +8,19 @@ const { requestRestore, approveRestore, executeRestore, verifyRestore, listResto
 router.use(protect);
 
 // Request restore (user or admin)
-router.post('/requests',
+router.post('/',
   [ body('restoreType').optional().isIn(['ACCOUNT','DATA']).withMessage('Invalid restoreType') ],
   requestRestore
 );
 
 // Admin: list requests
-router.get('/requests', authorize('admin'), listRestoreRequests);
+router.get('/', authorize('admin'), listRestoreRequests);
 
 // Admin: approve
-router.post('/requests/:id/approve', authorize('admin'), approveRestore);
+router.put('/:id/approve', authorize('admin'), approveRestore);
 
 // Admin: execute
-router.post('/requests/:id/execute', authorize('admin'), executeRestore);
+router.post('/:id/execute', authorize('admin'), executeRestore);
 
 // Admin: verify
 router.post('/requests/:id/verify', authorize('admin'), verifyRestore);

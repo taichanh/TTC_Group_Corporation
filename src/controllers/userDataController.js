@@ -5,9 +5,9 @@ const { createSystemLog } = require('../utils/logger');
 const createUserData = async (req, res, next) => {
   try {
     const owner = req.user._id;
-    const { key, data, tags } = req.body;
-    if (!key || data === undefined) return res.status(400).json({ message: 'key and data are required' });
-    const doc = await UserData.create({ owner, key, data, tags: tags || [] });
+    const { key, value, metadata } = req.body;
+    if (!key || value === undefined) return res.status(400).json({ message: 'key and value are required' });
+    const doc = await UserData.create({ owner, key, data: value, metadata: metadata || {} });
     await createSystemLog({ user: owner, action: 'USERDATA_CREATE', meta: { key } });
     res.status(201).json({ success: true, data: doc });
   } catch (err) {
@@ -30,9 +30,9 @@ const listUserData = async (req, res, next) => {
 // Read single
 const getUserData = async (req, res, next) => {
   try {
-    const doc = await UserData.findOne({ owner: req.user._id, key: req.params.key });
+    const doc = await UserData.findOne({ owner: req.user._id, _id: req.params.id });
     if (!doc) return res.status(404).json({ message: 'Not found' });
-    await createSystemLog({ user: req.user._id, action: 'USERDATA_READ', meta: { key: req.params.key } });
+    await createSystemLog({ user: req.user._id, action: 'USERDATA_READ', meta: { id: req.params.id } });
     res.json({ success: true, data: doc });
   } catch (err) { next(err); }
 };
@@ -40,12 +40,13 @@ const getUserData = async (req, res, next) => {
 // Update
 const updateUserData = async (req, res, next) => {
   try {
-    const { data, tags } = req.body;
-    const setObj = { data };
-    if (tags !== undefined) setObj.tags = tags;
+    const { value, metadata } = req.body;
+    const setObj = {};
+    if (value !== undefined) setObj.data = value;
+    if (metadata !== undefined) setObj.metadata = metadata;
     const update = { $set: setObj };
     const doc = await UserData.findOneAndUpdate(
-      { owner: req.user._id, key: req.params.key },
+      { owner: req.user._id, _id: req.params.id },
       update,
       { new: true }
     );
@@ -57,9 +58,9 @@ const updateUserData = async (req, res, next) => {
 // Delete
 const deleteUserData = async (req, res, next) => {
   try {
-    const r = await UserData.deleteOne({ owner: req.user._id, key: req.params.key });
+    const r = await UserData.deleteOne({ owner: req.user._id, _id: req.params.id });
     if (r.deletedCount === 0) return res.status(404).json({ message: 'Not found' });
-    await createSystemLog({ user: req.user._id, action: 'USERDATA_DELETE', meta: { key: req.params.key } });
+    await createSystemLog({ user: req.user._id, action: 'USERDATA_DELETE', meta: { id: req.params.id } });
     res.json({ success: true });
   } catch (err) { next(err); }
 };
