@@ -39,7 +39,7 @@ const approveRestore = async (req, res, next) => {
       user: doc.targetUser,
       title: 'Restore Request Approved',
       message: `Your restore request for ${doc.restoreType} has been approved.`,
-      type: 'success'
+      type: 'restore_approved'
     });
     await createSystemLog({ user: req.user._id, action: 'RESTORE_APPROVE', meta: { restoreId: doc._id.toString(), backupRef: doc.backupRef } });
     try { const { sendWebhook } = require('../utils/notify'); sendWebhook('restore.approved', { restoreId: doc._id.toString(), backupRef: doc.backupRef }).catch(()=>{}); } catch(_) {}
