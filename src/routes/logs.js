@@ -5,12 +5,14 @@ const SystemLog = require('../models/SystemLog');
 const RestoreLog = require('../models/RestoreLog');
 
 // System logs
-router.get('/system', protect, authorize('admin'), async (req, res) => {
+router.get('/', protect, authorize('admin'), async (req, res) => {
+  const { limit = 10 } = req.query;
   const logs = await SystemLog.find()
     .populate('user', 'email role')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .limit(Number(limit));
 
-  res.json(logs);
+  res.json({ success: true, data: logs });
 });
 
 // Restore logs
